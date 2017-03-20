@@ -43,7 +43,7 @@ void load_db(long long int size)
 	global_db.stable_lock = (pthread_mutex_t *) malloc(PAGE_SIZE * sizeof(pthread_mutex_t));
 	global_db.STATE = REST;
 
-	int i = 0;
+	long long int i = 0;
 	while(i<size)
 	{
 		pthread_mutex_init(&(global_db.live_lock[i]),NULL);
@@ -58,40 +58,33 @@ void* trans(void* info)
     long long int transID = ++count;
     int start_state = global_db.STATE;
     //  在REST或者COMPLETE阶段提交的事务，放到活动集合
-    if(start_state = REST || start_state == COMPLETE)     
+
+
+    long long int index1 = rand() % (global_db.size);    int value1 = rand();
+    long long int index2 = rand() % (global_db.size);    int value2 = rand();
+    long long int index3 = rand() % (global_db.size);    int value3 = rand();
+    long long int index4 = rand() % (global_db.size);    int value4 = rand();
+    long long int index5 = rand() % (global_db.size);    int value5 = rand();
+
+    pthread_mutex_lock(&(global_db.live_lock[index1]));    pthread_mutex_lock(&(global_db.stable_lock[index1]));
+    pthread_mutex_lock(&(global_db.live_lock[index2]));    pthread_mutex_lock(&(global_db.stable_lock[index2]));
+    pthread_mutex_lock(&(global_db.live_lock[index3]));    pthread_mutex_lock(&(global_db.stable_lock[index3]));
+    pthread_mutex_lock(&(global_db.live_lock[index4]));    pthread_mutex_lock(&(global_db.stable_lock[index4]));
+    pthread_mutex_lock(&(global_db.live_lock[index5]));    pthread_mutex_lock(&(global_db.stable_lock[index5]));
+
+    if(start_state == REST || start_state == COMPLETE)     
     {
-    	active_set.insert(transID);
+        active_set.insert(transID);
     }
-    if(start_state = PREPARE)
+    if(start_state == PREPARE)
     {
-    	prepare_set.insert(transID);
+        prepare_set.insert(transID);
     }
-    if(start_state = RESOLVE || start_state == CAPTURE)
+    if(start_state == RESOLVE || start_state == CAPTURE)
     {
-    	complete_set.insert(transID);
+        complete_set.insert(transID);
     }
 
-    long long int index1 = rand() % (global_db.size); 
-    int value1 = rand();
-    long long int index2 = rand() % (global_db.size); 
-    int value2 = rand();
-    long long int index3 = rand() % (global_db.size); 
-    int value3 = rand();
-    long long int index4 = rand() % (global_db.size); 
-    int value4 = rand();
-    long long int index5 = rand() % (global_db.size); 
-    int value5 = rand();
-
-    pthread_mutex_lock(&(global_db.live_lock[index1]));
-    pthread_mutex_lock(&(global_db.stable_lock[index1]));
-    pthread_mutex_lock(&(global_db.live_lock[index2]));
-    pthread_mutex_lock(&(global_db.stable_lock[index2]));
-    pthread_mutex_lock(&(global_db.live_lock[index3]));
-    pthread_mutex_lock(&(global_db.stable_lock[index3]));
-    pthread_mutex_lock(&(global_db.live_lock[index4]));
-    pthread_mutex_lock(&(global_db.stable_lock[index4]));
-    pthread_mutex_lock(&(global_db.live_lock[index5]));
-    pthread_mutex_lock(&(global_db.stable_lock[index5]));
 
     if(start_state == PREPARE)
     	if(global_db.bit[index1] == 0)
@@ -104,7 +97,6 @@ void* trans(void* info)
     	}
     else if(start_state == COMPLETE || start_state == REST)
     	if(global_db.stable[index1]);
-
     global_db.live[index1] = value1;
 
 	if(start_state == PREPARE)
@@ -118,7 +110,6 @@ void* trans(void* info)
     	}
     else if(start_state == COMPLETE || start_state == REST)
     	if(global_db.stable[index2]);
-
     global_db.live[index2] = value2;
 
     if(start_state == PREPARE)
@@ -132,7 +123,6 @@ void* trans(void* info)
     	}
     else if(start_state == COMPLETE || start_state == REST)
     	if(global_db.stable[index3]);
-
     global_db.live[index3] = value3;
 
     if(start_state == PREPARE)
@@ -146,7 +136,6 @@ void* trans(void* info)
     	}
     else if(start_state == COMPLETE || start_state == REST)
     	if(global_db.stable[index4]);
-
     global_db.live[index4] = value4;
 
     if(start_state == PREPARE)
@@ -160,11 +149,10 @@ void* trans(void* info)
     	}
     else if(start_state == COMPLETE || start_state == REST)
     	if(global_db.stable[index5]);
-    	
-
     global_db.live[index5] = value5;
-	printf("commit trans: %lld\n",transID);
-//开始提交
+    //usleep(1000);
+	printf("#");
+    //开始提交
     int commit_state = global_db.STATE;
 	if(start_state == PREPARE)
 		if(commit_state == RESOLVE)
@@ -176,33 +164,32 @@ void* trans(void* info)
 			global_db.bit[index5]=1;
 		}
 
-    pthread_mutex_unlock(&(global_db.live_lock[index1]));pthread_mutex_unlock(&(global_db.stable_lock[index1]));
-    pthread_mutex_unlock(&(global_db.live_lock[index2]));pthread_mutex_unlock(&(global_db.stable_lock[index2]));
-    pthread_mutex_unlock(&(global_db.live_lock[index3]));pthread_mutex_unlock(&(global_db.stable_lock[index3]));
-    pthread_mutex_unlock(&(global_db.live_lock[index4]));pthread_mutex_unlock(&(global_db.stable_lock[index4]));
-    pthread_mutex_unlock(&(global_db.live_lock[index5]));pthread_mutex_unlock(&(global_db.stable_lock[index5]));
-
-    if(start_state = REST)     //  在REST阶段提交的事务，放到活动集合
+    if(start_state == REST || start_state == COMPLETE)     //  在REST阶段提交的事务，放到活动集合
     {
-    	active_set.erase(transID);
+        active_set.erase(transID);
     }
-    if(start_state = PREPARE)
+    if(start_state == PREPARE)
     {
-    	prepare_set.erase(transID);
+        prepare_set.erase(transID);
     }
-    if(start_state = RESOLVE || global_db.STATE == CAPTURE)
+    if(start_state == RESOLVE || global_db.STATE == CAPTURE)
     {
-    	complete_set.erase(transID);
+        complete_set.erase(transID);
     }
+    pthread_mutex_unlock(&(global_db.live_lock[index1]));    pthread_mutex_unlock(&(global_db.stable_lock[index1]));
+    pthread_mutex_unlock(&(global_db.live_lock[index2]));    pthread_mutex_unlock(&(global_db.stable_lock[index2]));
+    pthread_mutex_unlock(&(global_db.live_lock[index3]));    pthread_mutex_unlock(&(global_db.stable_lock[index3]));
+    pthread_mutex_unlock(&(global_db.live_lock[index4]));    pthread_mutex_unlock(&(global_db.stable_lock[index4]));
+    pthread_mutex_unlock(&(global_db.live_lock[index5]));    pthread_mutex_unlock(&(global_db.stable_lock[index5]));
 }
 
 void* workload(void* argv)
 {
-	struct threadpool *pool = threadpool_init(10,200);
+	struct threadpool *pool = threadpool_init(workload_thread,workload_buffer);
 	while(1)
 	{
 		threadpool_add_job(pool,trans,NULL);
-		usleep(10);
+		usleep(1000);
 		if(1 == is_finished)  break;
 	}
 	threadpool_destroy(pool);
@@ -213,16 +200,16 @@ void runcheckpointer(int num)
 {
 	while(num--)
 	{
-		printf("REST\n");
+		printf("\nREST\n");
 		global_db.STATE = REST;
 		sleep(10);
 		global_db.STATE = PREPARE;
-		printf("prepare\n" );
+		printf("\nprepare\n" );
 		while(!active_set.empty());
 		global_db.STATE = RESOLVE;
-		printf("RESOLVE\n");
+		printf("\nRESOLVE\n");
 		while(!prepare_set.empty());
-		printf("CAPTURE\n");
+		printf("\nCAPTURE\n");
 		global_db.STATE = CAPTURE;
 
 		int i = 0;
@@ -239,7 +226,7 @@ void runcheckpointer(int num)
 			}
 			i++;
 		}
-		printf("COMPLETE\n");
+		printf("\nCOMPLETE\n");
 		global_db.STATE = COMPLETE;
 		while(!complete_set.empty());
 	}
@@ -251,8 +238,8 @@ int main(int argc, char const *argv[])
 	srand((unsigned)time(NULL));
 	load_db(atoi(argv[1]));
 	pthread_t workload_pid;
-	workload_thread = 1;
-	workload_buffer = 1;
+	workload_thread = atoi(argv[2]);
+	workload_buffer = atoi(argv[3]);
 	pthread_create(&workload_pid,NULL,workload,NULL);
 	runcheckpointer(10);    
 	return 0;
