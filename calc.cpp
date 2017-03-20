@@ -28,10 +28,8 @@ database global_db;
 int is_finished = 0;     //程序是否结束
 long long int count = 0;    // 事务编号
 long long int throughput = 0;
-std::set<long long int> active_set;
-std::set<long long int> prepare_set;
-std::set<long long int> complete_set;
 
+long long int active,prepare,complete;
 int workload_thread;
 int workload_buffer;
 int work = 0;
@@ -75,24 +73,24 @@ void* transaction(void* info)
     work--;
     if(start_state == REST)
     {
-        active_set.insert(transactionID);
+        active++;
     }
     else if(start_state == COMPLETE)
     {
-    	active_set.insert(transactionID);
+    	active++;
 	}
 
     else if(start_state == PREPARE)
     {
-        prepare_set.insert(transactionID);
+        prepare++;
     }
 	else if(start_state == RESOLVE)
 	{
-    	complete_set.insert(transactionID);
+    	complete++;
 	}
 	else if(start_state == CAPTURE)
     {
-        complete_set.insert(transactionID);
+        complete++;
     }
 
     long long int index1 = rand() % (global_db.size);    int value1 = rand();
@@ -191,23 +189,23 @@ void* transaction(void* info)
 
     if(start_state == REST)
     {
-        active_set.erase(transactionID);
+        active--;
     }
     else if(start_state == COMPLETE)
     {
-    	active_set.insert(transactionID);
+    	active--;
 	}
 	else if(start_state == RESOLVE)
 	{
-    	complete_set.erase(transactionID);
+    	complete--;
 	}
     else if(start_state == PREPARE)
     {
-        prepare_set.insert(transactionID);
+        prepare--;
     }
     else if(start_state == CAPTURE)
     {
-        complete_set.insert(transactionID);
+        complete--;
     }
 
     pthread_mutex_unlock(&(global_db.live_lock[index1]));    pthread_mutex_unlock(&(global_db.stable_lock[index1]));
@@ -246,10 +244,10 @@ void checkpointer(int num)
 		sleep(1);
 		global_db.STATE = PREPARE;
 		printf("\nprepare\n" );
-		while(!active_set.empty());
+		while(active==0);
 		global_db.STATE = RESOLVE;
 		printf("\nRESOLVE\n");
-		while(!prepare_set.empty());
+		while(!prepare==0);
 		printf("\nCAPTURE\n");
 		global_db.STATE = CAPTURE;
 
@@ -272,7 +270,7 @@ void checkpointer(int num)
 
 		printf("\nCOMPLETE\n");
 		global_db.STATE = COMPLETE;
-		while(!complete_set.empty());
+		while(!complete==0);
 	}
 	is_finished = 1;
 }
