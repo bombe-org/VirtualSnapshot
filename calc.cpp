@@ -29,12 +29,7 @@ typedef struct {
 database global_db;
 int is_finished = 0;     //程序是否结束
 long long int throughput = 0;   //  系统最大并行度
-long long int count = 0;
 long long int active=0,prepare=0,complete=0;
-pthread_mutex_t mutex_active;
-pthread_mutex_t mutex_prepare;
-pthread_mutex_t mutex_complete;
-pthread_mutex_t mutex_state;
 
 
 int* sec_throughput;
@@ -79,12 +74,12 @@ void load_db(long long int size) {
 	}
 }
 
+//   采用两阶段锁操作并发事务
 void work(int start_state)
 {
     long long int index1 = rand() % (global_db.size);   int value1 = rand();    
     pthread_mutex_lock(&(global_db.live_lock[index1]));
-    pthread_mutex_lock(&(global_db.stable_lock[index1]));
-    //printf("*");
+    pthread_mutex_lock(&(global_db.stable_lock[index1]));   
 
     if(start_state == PREPARE)
         if(global_db.bit[index1] == 0)
@@ -104,13 +99,11 @@ void work(int start_state)
             global_db.bit[index1]=1;    
         }
     }       
-    sec_throughput[get_time()-run_time] += 1;
-    //printf("!");
+    sec_throughput[get_time()-run_time] += 1;    
     pthread_mutex_unlock(&(global_db.live_lock[index1]));
     pthread_mutex_unlock(&(global_db.stable_lock[index1]));    
 }
 
-//   采用两阶段锁操作并发事务
 void* transaction(void* info) {
 	while(is_finished==0)
     {
@@ -133,41 +126,30 @@ void* transaction(void* info) {
 	
 }
 
-
-
 void checkpointer(int num) {
 	while(num--) {
-		printf("\nREST\n");
-		//pthread_mutex_lock(&mutex_state);
-		global_db.STATE = REST;
-		//pthread_mutex_unlock(&mutex_state);
+		printf("\nREST\n");		
+		global_db.STATE = REST;		
         long long int cu = get_utime() + 1000000;
-        while(abs(cu- get_utime()) >= 100) {;}
-		//pthread_mutex_lock(&mutex_state);
-		global_db.STATE = PREPARE;
-		//pthread_mutex_unlock(&mutex_state);
+        while(abs(cu- get_utime()) >= 100);
+		global_db.STATE = PREPARE;		
 		printf("\nPREPARE\n" );
 		while(active>0);
-		//pthread_mutex_lock(&mutex_state);
-		//global_db.STATE = RESOLVE;
-		//pthread_mutex_unlock(&mutex_state);
 		printf("\nRESOLVE\n");
 		while(prepare>0);
-		printf("\nCAPTURE\n");
-		//pthread_mutex_lock(&mutex_state);
-		global_db.STATE = CAPTURE;
-		//pthread_mutex_unlock(&mutex_state);
+		printf("\nCAPTURE\n");		
+		global_db.STATE = CAPTURE;		
 
 		long long int i = 0;
         ckp_fd = open("./dump.dat", O_WRONLY | O_TRUNC | O_SYNC | O_CREAT, 666);
 		while(i < global_db.size) {
 			if(global_db.bit[i] == 1) {				
                 write(ckp_fd, global_db.stable + i * PAGE_SIZE,PAGE_SIZE);
-                //lseek(ckp_fd, 0, SEEK_END);
+                lseek(ckp_fd, 0, SEEK_END);
 			} else if(global_db.bit[i] == 0) {
 				global_db.bit[i] == 1;
 				write(ckp_fd, global_db.live + i * PAGE_SIZE,PAGE_SIZE);
-                //lseek(ckp_fd, 0, SEEK_END);
+                lseek(ckp_fd, 0, SEEK_END);
 			}				       
 			i++;
 		}
@@ -180,10 +162,7 @@ void checkpointer(int num) {
 
 int main(int argc, char const *argv[]) {
 	srand((unsigned)time(NULL));
-	pthread_mutex_init(&mutex_active,NULL);
-	pthread_mutex_init(&mutex_prepare,NULL);
-	pthread_mutex_init(&mutex_complete,NULL);
-	pthread_mutex_init(&mutex_state,NULL);
+
     
 	load_db(atoi(argv[1]));
     sec_throughput = (int*) malloc(10000000 * sizeof(int));
