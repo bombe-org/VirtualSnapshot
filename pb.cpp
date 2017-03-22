@@ -179,7 +179,7 @@ int main(int argc, char const *argv[]) {
     }
     for (long long int i = 0; i < duration; ++i)
     {
-    	printf("%lld,%d\n",i,result[i]);
+    	printf("%lld\t%d\n",i,result[i]);
     }
     
 	return 0;
