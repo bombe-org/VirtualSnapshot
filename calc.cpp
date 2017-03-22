@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <math.h>
 
+#include "util.h"
 #define REST 0
 #define PREPARE 1
 #define RESOLVE 2
@@ -33,28 +34,9 @@ long long int active=0,prepare=0,complete=0;
 
 
 int* sec_throughput;
-int run_time;
-int ckp_fd;  // 文件描述符
+long long int run_count;
+int ckp_fd;  // 文件
 
-
-long long get_ntime(void)
-{
-    struct timespec timeNow;
-    clock_gettime(CLOCK_MONOTONIC, &timeNow);
-    return timeNow.tv_sec * 1000000000 + timeNow.tv_nsec;
-}
-
-long long get_utime(void)
-{
-    return get_ntime() / 1000;
-}
-
-long long get_time(void)
-{
-     struct timespec timeNow;
-    clock_gettime(CLOCK_MONOTONIC, &timeNow);
-    return timeNow.tv_sec;
-}
 
 
 void load_db(long long int size) {
@@ -77,20 +59,21 @@ void load_db(long long int size) {
 //   采用两阶段锁操作并发事务
 void work(int start_state)
 {
+	//long long int start_time = get_ntime();
     long long int index1 = rand() % (global_db.size);   int value1 = rand();    
     pthread_mutex_lock(&(global_db.live_lock[index1]));
     pthread_mutex_lock(&(global_db.stable_lock[index1]));   
 
     if(start_state == PREPARE)
         if(global_db.bit[index1] == 0)
-            memcpy(global_db.stable + PAGE_SIZE * index1,global_db.live + PAGE_SIZE * index1,1024);
+            memcpy(global_db.stable + PAGE_SIZE * index1,global_db.live + PAGE_SIZE * index1,PAGE_SIZE);
         else if(start_state == RESOLVE || start_state == CAPTURE)
             if(global_db.bit[index1] == 0) {
-                memcpy(global_db.stable + PAGE_SIZE * index1,global_db.live + PAGE_SIZE * index1,1024);
+                memcpy(global_db.stable + PAGE_SIZE * index1,global_db.live + PAGE_SIZE * index1,PAGE_SIZE);
                 global_db.bit[index1] = 1;
             } else if(start_state == COMPLETE || start_state == REST)
                 if(global_db.stable[index1]);
-    memset(global_db.live + PAGE_SIZE * index1,value1,1024);    
+    memset(global_db.live + PAGE_SIZE * index1,value1,PAGE_SIZE);    
     //pthread_mutex_lock(&mutex_state);
     int commit_state = global_db.STATE;
     //pthread_mutex_unlock(&mutex_state);
@@ -99,16 +82,17 @@ void work(int start_state)
             global_db.bit[index1]=1;    
         }
     }       
-    sec_throughput[get_time()-run_time] += 1;    
+    sec_throughput[run_count++] = get_mtime();
     pthread_mutex_unlock(&(global_db.live_lock[index1]));
-    pthread_mutex_unlock(&(global_db.stable_lock[index1]));    
+    pthread_mutex_unlock(&(global_db.stable_lock[index1]));  
+    //printf("%lld\n", get_ntime()-start_time);  
 }
 
 void* transaction(void* info) {
 	while(is_finished==0)
     {
-        int start_state = global_db.STATE;        
-        if(start_state == REST || start_state == COMPLETE) {            
+        int start_state = global_db.STATE;
+        if(start_state == REST || start_state == COMPLETE) {
             active++;
             work(start_state);
             active--;            
@@ -120,24 +104,20 @@ void* transaction(void* info) {
             complete++;
             work(start_state);            
             complete--;            
-        }       
-        usleep(1000);
-    }
+        }
+   }
 	
 }
 
 void checkpointer(int num) {
-	while(num--) {
-		printf("\nREST\n");		
+	sleep(5);  //第一次检查点直接用5s替代算了
+	while(num--) {			
 		global_db.STATE = REST;		
-        long long int cu = get_utime() + 1000000;
-        while(abs(cu- get_utime()) >= 100);
-		global_db.STATE = PREPARE;		
-		printf("\nPREPARE\n" );
+		sleep(1);
+		global_db.STATE = PREPARE;				
 		while(active>0);
-		printf("\nRESOLVE\n");
-		while(prepare>0);
-		printf("\nCAPTURE\n");		
+		global_db.STATE = RESOLVE;
+		while(prepare>0);				
 		global_db.STATE = CAPTURE;		
 
 		long long int i = 0;
@@ -150,10 +130,9 @@ void checkpointer(int num) {
 				global_db.bit[i] == 1;
 				write(ckp_fd, global_db.live + i * PAGE_SIZE,PAGE_SIZE);
                 lseek(ckp_fd, 0, SEEK_END);
-			}				       
+			}
 			i++;
-		}
-		printf("\nCOMPLETE\n");
+		}		
 		global_db.STATE = COMPLETE;
 		while(complete>0);
 	}
@@ -161,25 +140,33 @@ void checkpointer(int num) {
 }
 
 int main(int argc, char const *argv[]) {
-	srand((unsigned)time(NULL));
+    srand((unsigned)time(NULL));    
+    load_db(atoi(argv[1]));
 
+    sec_throughput = (int*) malloc(10000000000 * sizeof(int));
     
-	load_db(atoi(argv[1]));
-    sec_throughput = (int*) malloc(10000000 * sizeof(int));
-    run_time = get_time();
-	throughput = atoi(argv[2]);
+    throughput = atoi(argv[2]);
+
     for (int i = 0; i < throughput; ++i)
     {
         pthread_t pid_t;
         pthread_create(&pid_t,NULL,transaction,NULL);
     }
 
-
-	checkpointer(10);
-    int end_time = get_time()-run_time;
-    for (int i = 0; i < end_time; ++i)
+    checkpointer(10);
+    
+    int max,min;
+    max_min(sec_throughput,run_count,&max,&min);
+    int duration = max-min+1;
+    int* result = (int*) malloc(sizeof(int) * (duration));
+    for (long long int i = 0; i < run_count; ++i)
     {
-        printf("%d,%d\n",i,sec_throughput[i]);
+        result[ (sec_throughput[i] - min) ] +=1;
+        
+    }
+    for (long long int i = 0; i < duration; ++i)
+    {
+        printf("%lld,%d\n",i,result[i]);
     }
 	return 0;
 }
