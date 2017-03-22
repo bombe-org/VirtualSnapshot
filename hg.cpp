@@ -188,10 +188,13 @@ int main(int argc, char const *argv[]) {
     	result[ (sec_throughput[i] - min) ] +=1;
         
     }
+    /*
     for (long long int i = 0; i < duration; ++i)
     {
     	printf("%lld\t%d\n",i,result[i]);
     }
+    */
+    printf("%f\n", 1.0*run_count / duration);
     
 	return 0;
 }
