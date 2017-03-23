@@ -67,7 +67,12 @@ void work0()
 	
     
 	global_db.bit1[index1] = 1;
-	memset(global_db.D1 + PAGE_SIZE * index1,value1,PAGE_SIZE);
+	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
+	int k =0;
+	while(k++ < 1024)
+	{
+		memcpy( global_db.D1 + PAGE_SIZE * index1 + 4*k , &value1, 4);
+	}
 	global_db.bitr[index1] = 0;
     
     sec_throughput[run_count++] = get_mtime();
@@ -83,7 +88,12 @@ void work1(){
 	
     
 	global_db.bit2[index1] = 1;
-	memset(global_db.D2 + PAGE_SIZE * index1,value1,PAGE_SIZE);
+	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
+	int k =0;
+	while(k++ < 1024)
+	{
+		memcpy( global_db.D2 + PAGE_SIZE * index1 + 4*k , &value1, 4);
+	}
 	global_db.bitr[index1] = 0;
     
     sec_throughput[run_count++] = get_mtime();

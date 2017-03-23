@@ -59,7 +59,12 @@ void work0()
     long long int index1 = rand() % (global_db.size);   int value1 = rand();
     pthread_mutex_lock(&(global_db.D1_lock[index1]));	    
 	
-	memset(global_db.D1 + PAGE_SIZE * index1,value1,PAGE_SIZE);
+	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
+	int k =0;
+	while(k++ < 1024)
+	{
+		memcpy( global_db.D1 + PAGE_SIZE * index1 + 4*k , &value1, 4);
+	}
 	global_db.bitr[index1] = 1;
     
     sec_throughput[run_count++] = get_mtime();
@@ -73,7 +78,12 @@ void work1(){
     long long int index1 = rand() % (global_db.size);   int value1 = rand();    
     pthread_mutex_lock(&(global_db.D2_lock[index1]));       
 	
-	memset(global_db.D2 + PAGE_SIZE * index1,value1,PAGE_SIZE);
+	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
+	int k =0;
+	while(k++ < 1024)
+	{
+		memcpy( global_db.D2 + PAGE_SIZE * index1 + 4*k , &value1, 4);
+	}
 	global_db.bitr[index1] = 2;
     
     sec_throughput[run_count++] = get_mtime();

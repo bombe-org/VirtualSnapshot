@@ -73,8 +73,13 @@ void work(int start_state)
                 global_db.bit[index1] = 1;
             } else if(start_state == COMPLETE || start_state == REST)
                 if(global_db.stable[index1]);
-    memset(global_db.live + PAGE_SIZE * index1,value1,PAGE_SIZE);    
-    //pthread_mutex_lock(&mutex_state);
+    //memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
+	int k =0;
+	while(k++ < 1024)
+	{
+		memcpy( global_db.live + PAGE_SIZE * index1 + 4*k , &value1, 4);
+	}
+     //pthread_mutex_lock(&mutex_state);
     int commit_state = global_db.STATE;
     //pthread_mutex_unlock(&mutex_state);
     if(start_state == PREPARE){
