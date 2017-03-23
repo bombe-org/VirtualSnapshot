@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include <map>
 #include <fcntl.h>
 #include <math.h>
 
@@ -98,20 +97,19 @@ void* transaction(void* info) {
     {
         int start_state = global_db.STATE;
         if(start_state == REST || start_state == COMPLETE) {
-            active++;
+            __sync_fetch_and_add(&active,1);
             work(start_state);
-            active--;            
+            __sync_fetch_and_sub(&active,1);           
         } else if(start_state == PREPARE) {            
-            prepare++;  
+            __sync_fetch_and_add(&prepare,1);
             work(start_state);
-            prepare--;          
+            __sync_fetch_and_sub(&prepare,1);
         } else if(start_state == CAPTURE || start_state == RESOLVE) {            
-            complete++;
-            work(start_state);            
-            complete--;            
+            __sync_fetch_and_add(&complete,1);
+            work(start_state);
+            __sync_fetch_and_sub(&complete,1);           
         }
-   }
-	
+   }	
 }
 
 void checkpointer(int num) {

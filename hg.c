@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include <map>
 #include <fcntl.h>
 #include <math.h>
 
@@ -18,6 +17,8 @@ typedef struct {
 	long long int size;
 	char* D1;
 	char* D2;
+	int* bit1;
+	int* bit2;
 	int* bitr;
 	pthread_mutex_t* D1_lock;
 	pthread_mutex_t* D2_lock;
@@ -36,12 +37,16 @@ long long int run_count = 0;
 int ckp_fd;  // 文件描述符
 
 
+
 void load_db(long long int size) {
 	global_db.size = size;
 	global_db.STATE = REST;
 	global_db.D1 =      (char *) malloc(global_db.size * PAGE_SIZE);  	
 	global_db.D2 =      (char *) malloc(global_db.size * PAGE_SIZE);	
+	global_db.bit1 =    (int *)  malloc(global_db.size * sizeof(int)); 	
+	global_db.bit2 =    (int *)  malloc(global_db.size * sizeof(int));	
 	global_db.bitr =    (int *)  malloc(global_db.size * sizeof(int)); 
+
 	global_db.D1_lock =   (pthread_mutex_t *) malloc(global_db.size * sizeof(pthread_mutex_t));
 	global_db.D2_lock =   (pthread_mutex_t *) malloc(global_db.size * sizeof(pthread_mutex_t));
 	long long int i = 0;
@@ -57,54 +62,51 @@ void work0()
 {
 	//long long int start_time = get_ntime();
     long long int index1 = rand() % (global_db.size);   int value1 = rand();
-    pthread_mutex_lock(&(global_db.D1_lock[index1]));	    
-	
+	global_db.bit1[index1] = 1;
+    pthread_mutex_lock(&(global_db.D1_lock[index1]));	
 	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
 	int k =0;
 	while(k++ < 1024)
 	{
 		memcpy( global_db.D1 + PAGE_SIZE * index1 + 4*k , &value1, 4);
 	}
-	global_db.bitr[index1] = 1;
+	pthread_mutex_unlock(&(global_db.D1_lock[index1]));  
+	global_db.bitr[index1] = 0;
     
-    sec_throughput[run_count++] = get_mtime();
-	
-    pthread_mutex_unlock(&(global_db.D1_lock[index1]));    
+    sec_throughput[run_count++] = get_mtime();      
     //printf("%lld\n", get_ntime()-start_time);
 }
 
 void work1(){
 	//long long int start_time = get_ntime();
-    long long int index1 = rand() % (global_db.size);   int value1 = rand();    
-    pthread_mutex_lock(&(global_db.D2_lock[index1]));       
-	
+    long long int index1 = rand() % (global_db.size);   int value1 = rand();  
+	global_db.bit2[index1] = 1;	
+    pthread_mutex_lock(&(global_db.D2_lock[index1]));  
 	//memset(global_db.live + PAGE_SIZE * index1, &value1, PAGE_SIZE);
 	int k =0;
 	while(k++ < 1024)
 	{
 		memcpy( global_db.D2 + PAGE_SIZE * index1 + 4*k , &value1, 4);
 	}
-	global_db.bitr[index1] = 2;
-    
-    sec_throughput[run_count++] = get_mtime();
-	
-    pthread_mutex_unlock(&(global_db.D2_lock[index1]));
+	pthread_mutex_unlock(&(global_db.D2_lock[index1]));
+	global_db.bitr[index1] = 0;    
+    sec_throughput[run_count++] = get_mtime();    
     //printf("%lld\n", get_ntime()-start_time);
 }
 
 void* transaction(void* info) {
 	while(is_finished==0)
     {      
-    	int p = peroid;
+    	int p = peroid;  
 		if(p%2==0)
 		{
-			active0++;
+			__sync_fetch_and_add(&active0,1);
 			work0();
-			active0--;
+			__sync_fetch_and_sub(&active0,1);
 		}else{
-			active1++;
+			__sync_fetch_and_add(&active1,1);
 			work1();
-			active1--;
+			__sync_fetch_and_sub(&active1,1);
 		}
     }
 	
@@ -121,18 +123,17 @@ void checkpointer(int num) {
 		long long int i;		
 		if(p%2==1){
 			while(active0>0);
-			ckp_fd = open("./dump.dat", O_WRONLY | O_TRUNC | O_SYNC | O_CREAT, 666);
-			i = 0;	        
-			while(i < global_db.size) {		
-				if(global_db.bitr[i]==2)    // write to online  顺带着刷磁盘的过程中执行了
-				{
-					pthread_mutex_lock(&(global_db.D1_lock[i]));
-					memcpy(global_db.D1 + i * PAGE_SIZE, global_db.D2 + i * PAGE_SIZE, PAGE_SIZE);
-					pthread_mutex_unlock(&(global_db.D1_lock[i]));
-					global_db.bitr[i] = 0;
-				}						
-	            write(ckp_fd, global_db.D1 + i * PAGE_SIZE,PAGE_SIZE);
-	            lseek(ckp_fd, 0, SEEK_END);
+			i = 0;
+	        ckp_fd = open("./dump.dat", O_WRONLY | O_TRUNC | O_SYNC | O_CREAT, 666);
+			while(i < global_db.size) {
+				if(global_db.bit1[i] == 1) {				
+	                write(ckp_fd, global_db.D1 + i * PAGE_SIZE,PAGE_SIZE);
+	                lseek(ckp_fd, 0, SEEK_END);
+	                global_db.bit1[i] == 0;
+				} else{
+					write(ckp_fd, global_db.D1 + i * PAGE_SIZE,PAGE_SIZE);
+	                lseek(ckp_fd, 0, SEEK_END);
+				}
 				i++;
 			}
 		} 
@@ -140,19 +141,21 @@ void checkpointer(int num) {
 			while(active1>0);
 			i = 0;
 	        ckp_fd = open("./dump.dat", O_WRONLY | O_TRUNC | O_SYNC | O_CREAT, 666);
-			while(i < global_db.size) {	
-				if(global_db.bitr[i]==1)
-				{
-					pthread_mutex_lock(&(global_db.D2_lock[i]));
-					memcpy(global_db.D2 + i * PAGE_SIZE, global_db.D1 + i * PAGE_SIZE, PAGE_SIZE);
-					pthread_mutex_unlock(&(global_db.D2_lock[i]));
-					global_db.bitr[i] = 0;
-				}			
-	            write(ckp_fd, global_db.D2 + i * PAGE_SIZE,PAGE_SIZE);
-	            lseek(ckp_fd, 0, SEEK_END);	                
+			while(i < global_db.size) {
+				if(global_db.bit2[i] == 1) {				
+	                write(ckp_fd, global_db.D2 + i * PAGE_SIZE,PAGE_SIZE);
+	                lseek(ckp_fd, 0, SEEK_END);
+	                global_db.bit2[i] == 0;
+				} else{
+					write(ckp_fd, global_db.D2 + i * PAGE_SIZE,PAGE_SIZE);
+	                lseek(ckp_fd, 0, SEEK_END);
+				}
 				i++;
 			}
 		}
+
+		//待改
+		
 	}
 	is_finished = 1;
 }
