@@ -55,15 +55,9 @@ void load_db(long long int size) {
 	}
 }
 
-//   采用两阶段锁操作并发事务
-void work(int start_state)
+void unit_write(int start_state,long long int index1, int value1)
 {
-	//long long int start_time = get_ntime();
-    long long int index1 = rand() % (global_db.size);   int value1 = rand();    
-    pthread_mutex_lock(&(global_db.live_lock[index1]));
-    pthread_mutex_lock(&(global_db.stable_lock[index1]));   
-
-    if(start_state == PREPARE)
+	if(start_state == PREPARE)
         if(global_db.bit[index1] == 0)
             memcpy(global_db.stable + PAGE_SIZE * index1,global_db.live + PAGE_SIZE * index1,PAGE_SIZE);
         else if(start_state == RESOLVE || start_state == CAPTURE)
@@ -85,10 +79,29 @@ void work(int start_state)
         if(commit_state == RESOLVE) {
             global_db.bit[index1]=1;    
         }
-    }       
+    }
+	//printf("~");
+}
+
+
+//   采用两阶段锁操作并发事务
+void work(int start_state)
+{
+	//long long int start_time = get_ntime();
+    long long int index1 = rand() % (global_db.size);   int value1 = rand();    
+	long long int index2 = rand() % (global_db.size);   int value2 = rand();    
+	long long int index3 = rand() % (global_db.size);   int value3 = rand();    
+    //pthread_mutex_lock(&(global_db.live_lock[index1]));    pthread_mutex_lock(&(global_db.stable_lock[index1]));   
+	//pthread_mutex_lock(&(global_db.live_lock[index2]));    pthread_mutex_lock(&(global_db.stable_lock[index2]));
+	//pthread_mutex_lock(&(global_db.live_lock[index3]));    pthread_mutex_lock(&(global_db.stable_lock[index3]));
+	unit_write(start_state,index1,value1);
+	//pthread_mutex_unlock(&(global_db.live_lock[index1]));    pthread_mutex_unlock(&(global_db.stable_lock[index1]));
+	unit_write(start_state,index2,value2);
+	//pthread_mutex_unlock(&(global_db.live_lock[index2]));    pthread_mutex_unlock(&(global_db.stable_lock[index2]));
+	unit_write(start_state,index3,value3);
+	//pthread_mutex_unlock(&(global_db.live_lock[index3]));    pthread_mutex_unlock(&(global_db.stable_lock[index3]));
     sec_throughput[run_count++] = get_mtime();
-    pthread_mutex_unlock(&(global_db.live_lock[index1]));
-    pthread_mutex_unlock(&(global_db.stable_lock[index1]));  
+	//printf("!");
     //printf("%lld\n", get_ntime()-start_time);  
 }
 
@@ -176,3 +189,4 @@ int main(int argc, char const *argv[]) {
     printf("%f\n", 1.0*run_count / duration);
 	return 0;
 }
+
