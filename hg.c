@@ -32,8 +32,8 @@ long long int active0=0;
 long long int active1=0;
 int peroid=0;
 
-int* sec_throughput;
-long long int run_count = 0;
+int* msec_throughput;
+long long int timestamp = 0;
 int ckp_fd;  // 文件描述符
 
 
@@ -99,7 +99,7 @@ void work0()
 	//pthread_mutex_unlock(&(global_db.D1_lock[index3]));  
 	
     
-    sec_throughput[run_count++] = get_mtime();      
+    ++msec_throughput[timestamp];  
     //printf("%lld\n", get_ntime()-start_time);
 }
 
@@ -122,7 +122,7 @@ void work1()
 	//pthread_mutex_unlock(&(global_db.D1_lock[index3]));  
 	
     
-    sec_throughput[run_count++] = get_mtime();      
+    ++msec_throughput[timestamp];
     //printf("%lld\n", get_ntime()-start_time);
 }
 
@@ -142,6 +142,15 @@ void* transaction(void* info) {
 		}
     }
 	
+}
+
+
+void* run_mtime(void* info){
+    while(is_finished==0){
+        sleep(1);
+        ++timestamp;
+		//printf(",");
+    }
 }
 
 void checkpointer(int num) {
@@ -201,8 +210,10 @@ int main(int argc, char const *argv[]) {
 	srand((unsigned)time(NULL));    
 	load_db(atoi(argv[1]));
 
-    sec_throughput = (int*) malloc(10000000000 * sizeof(int));
-    
+    msec_throughput = (int*) malloc(1000 * sizeof(int));  // assume running 1000s
+    for (int j = 0; j < 1000; ++j) {
+        msec_throughput[j] = 0;
+    }  
 	throughput = atoi(argv[2]);
 
     for (int i = 0; i < throughput; ++i)
@@ -210,25 +221,14 @@ int main(int argc, char const *argv[]) {
         pthread_t pid_t;
         pthread_create(&pid_t,NULL,transaction,NULL);
     }
-
+	pthread_t time_thread;
+    pthread_create(&time_thread,NULL,run_mtime,NULL);
 	checkpointer(10);
 	
-	int max,min;
-	max_min(sec_throughput,run_count,&max,&min);
-    int duration = max-min+1;
-    int* result = (int*) malloc(sizeof(int) * (duration));
-    for (long long int i = 0; i < run_count; ++i)
-    {
-    	result[ (sec_throughput[i] - min) ] +=1;
-        
-    }
-    /*
-    for (long long int i = 0; i < duration; ++i)
-    {
-    	printf("%lld\t%d\n",i,result[i]);
-    }
-    */
-    printf("%f\n", 1.0*run_count / duration);
+	for(int i=0;i<timestamp;i++)
+	{
+		printf("%d\n",msec_throughput[i]);
+	}
     
 	return 0;
 }
