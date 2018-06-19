@@ -138,8 +138,7 @@ void* transaction(void* info) {
 void* run_mtime(void* info){
     while(is_finished==0){
         sleep(1);
-        ++timestamp;
-		//printf(",");
+		printf("%d\n",msec_throughput[timestamp++]);//printf(",");
     }
 }
 
@@ -148,7 +147,7 @@ void checkpointer(int num) {
 	int * temp2;
 	sleep(5);  //第一次检查点直接用5s替代算了
 	while(num--) {
-		sleep(1);    //和calc保持一致
+		sleep(100);    //和calc保持一致
 		peroid++;	
 		int p = peroid;
 		long long int i;		

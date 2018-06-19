@@ -134,6 +134,7 @@ void* transaction(void* info) {
 void* run_mtime(void* info){
     while(is_finished==0){
         sleep(1);
+		printf("%d\n",msec_throughput[timestamp]);
         ++timestamp;
 		//printf(",");
     }
@@ -143,7 +144,7 @@ void checkpointer(int num) {
     sleep(5);  //第一次检查点直接用5s替代算了
     while(num--) {
         global_db.STATE = REST;
-        sleep(1);
+        sleep(100);
         global_db.STATE = PREPARE;
         while(active>0);
         global_db.STATE = RESOLVE;
@@ -188,9 +189,9 @@ int main(int argc, char const *argv[]) {
     pthread_t time_thread;
     pthread_create(&time_thread,NULL,run_mtime,NULL);
     checkpointer(10);
-	for(int i=0;i<timestamp;i++)
-	{
-		printf("%d\n",msec_throughput[i]);
-	}
+	//for(int i=0;i<timestamp;i++)
+	//{
+		//printf("%d\n",msec_throughput[i]);
+	//}
     return 0;
 }
