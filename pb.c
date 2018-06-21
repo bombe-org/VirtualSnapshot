@@ -201,6 +201,6 @@ int main(int argc, char const *argv[]) {
 	{
 		sum+=msec_throughput[timestamp];
 	}
-	printf("%f\n", (float)sum/timestamp);
-    return 0;
+    printf("PB,%d,%d,%d,%f\n",atoi(argv[1]),throughput, timestamp,(float)sum/timestamp);
+	return 0;
 }

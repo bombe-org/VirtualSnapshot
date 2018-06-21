@@ -1,11 +1,13 @@
 #!/bin/bash  
-rm *.txt  
+rm *.txt 
+echo size , thread_cnt, timestamp, tpms
+for s in 250000 500000 1000000 2000000
+do
 for i in 1 2 4 8 16 32 64 ;  
 do  
-echo $1-$i-calc.txt
-./calc.out $1 $i > $1-$i-calc.txt
-echo $1-$i-hg.txt
-./hg.out $1 $i > $1-$i-hg.txt
-echo $1-$i-pb.txt
-./pb.out $1 $i > $1-$i-pb.txt  
+./calc.out $s $i 
+./hg.out $s $i
+./pb.out $s $i  
 done
+done
+
