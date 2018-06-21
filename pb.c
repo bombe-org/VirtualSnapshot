@@ -180,7 +180,7 @@ int main(int argc, char const *argv[]) {
     srand((unsigned)time(NULL));
     load_db(atoi(argv[1]));
 
-    msec_throughput = (int*) malloc(1000 * sizeof(int));  // assume running 1000s
+    msec_throughput = (int*) malloc(3600 * sizeof(int));  // assume running 1000s
     for (int j = 0; j < 1000; ++j) {
         msec_throughput[j] = 0;
     }
