@@ -72,9 +72,9 @@ void ApplyWrite(int start_state,long long int index)
     // set each filed data.
     int k =0;
 	int rnd;
+	rnd = rand();
     while(k++ < 1024)
-    {
-		rnd = rand();
+    {		
         memcpy( global_db.live + LINE_SIZE * index + 4*k , &rnd, 4);
     }
 }

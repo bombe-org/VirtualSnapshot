@@ -55,9 +55,9 @@ void unit_write0(long long int index1)
 {
     int k =0;
 	int filed;
+	filed = rand();
     while(k++ < 1024)
-    {
-		filed = rand();
+    {		
         memcpy( global_db.D1 + LINE_SIZE * index1 + 4*k , &filed, 4);
     }
     global_db.bitr[index1] = 1;
@@ -67,9 +67,9 @@ void unit_write1(long long int index1)
 {
     int k =0;
 	int filed;
+	filed = rand();
     while(k++ < 1024)
-    {
-		filed = rand();
+    {		
         memcpy( global_db.D2 + LINE_SIZE * index1 + 4*k , &filed, 4);
     }
     global_db.bitr[index1] = 2;
@@ -183,14 +183,11 @@ void checkpointer(int num) {
 int main(int argc, char const *argv[]) {
     srand((unsigned)time(NULL));
     load_db(atoi(argv[1]));
-
     msec_throughput = (int*) malloc(3600 * sizeof(int));  // assume running 1000s
     for (int j = 0; j < 1000; ++j) {
         msec_throughput[j] = 0;
     }
-
     throughput = atoi(argv[2]);
-
     for (int i = 0; i < throughput; ++i)
     {
         pthread_t pid_t;
