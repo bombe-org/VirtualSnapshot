@@ -51,21 +51,25 @@ void load_db(long long int size) {
     }
 }
 
-void unit_write0(long long int index1,int filed)
+void unit_write0(long long int index1)
 {
     int k =0;
+	int filed;
     while(k++ < 1024)
     {
+		filed = rand();
         memcpy( global_db.D1 + LINE_SIZE * index1 + 4*k , &filed, 4);
     }
     global_db.bitr[index1] = 1;
 }
 
-void unit_write1(long long int index1,int filed)
+void unit_write1(long long int index1)
 {
     int k =0;
+	int filed;
     while(k++ < 1024)
     {
+		filed = rand();
         memcpy( global_db.D2 + LINE_SIZE * index1 + 4*k , &filed, 4);
     }
     global_db.bitr[index1] = 2;
@@ -74,15 +78,15 @@ void unit_write1(long long int index1,int filed)
 
 void work0()
 {
-    long long int index1 = rand() % (global_db.size);   int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   int value3 = rand();
+    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
+    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
     //pthread_mutex_lock(&(global_db.D1_lock[index1]));	
-    unit_write0(index1,value1);
+    unit_write0(index1);
     //pthread_mutex_lock(&(global_db.D1_lock[index2]));	
-    unit_write0(index2,value2);
+    unit_write0(index2);
     //pthread_mutex_lock(&(global_db.D1_lock[index3]));	
-    unit_write0(index3,value3);
+    unit_write0(index3);
     //pthread_mutex_unlock(&(global_db.D1_lock[index1]));  
     //pthread_mutex_unlock(&(global_db.D1_lock[index2]));  
     //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
@@ -91,15 +95,15 @@ void work0()
 
 void work1()
 {
-    long long int index1 = rand() % (global_db.size);   int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   int value3 = rand();
+    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
+    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
     //pthread_mutex_lock(&(global_db.D1_lock[index1]));	
-    unit_write1(index1,value1);
+    unit_write1(index1);
     //pthread_mutex_lock(&(global_db.D1_lock[index2]));	
-    unit_write1(index2,value2);
+    unit_write1(index2);
     //pthread_mutex_lock(&(global_db.D1_lock[index3]));	
-    unit_write1(index3,value3);
+    unit_write1(index3);
     //pthread_mutex_unlock(&(global_db.D1_lock[index1]));  
     //pthread_mutex_unlock(&(global_db.D1_lock[index2]));  
     //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
@@ -124,7 +128,7 @@ void* transaction(void* info) {
 
 }
 
-void* run_mtime(void* info){
+void* timer(void* info){
     while(is_finished==0){
         sleep(1);
         printf("%d\n",msec_throughput[timestamp]);
@@ -193,7 +197,7 @@ int main(int argc, char const *argv[]) {
         pthread_create(&pid_t,NULL,transaction,NULL);
     }
     pthread_t time_thread;
-    pthread_create(&time_thread,NULL,run_mtime,NULL);
+    pthread_create(&time_thread,NULL,timer,NULL);
     checkpointer(5);
     return 0;
 }

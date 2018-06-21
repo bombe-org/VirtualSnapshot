@@ -55,7 +55,7 @@ void load_db(long long int size) {
     }
 }
 
-void ApplyWrite(int start_state,long long int index, int filed)
+void ApplyWrite(int start_state,long long int index)
 {
     if(start_state == PREPARE) {
         if (global_db.bit[index] == 0)
@@ -71,9 +71,11 @@ void ApplyWrite(int start_state,long long int index, int filed)
     }
     // set each filed data.
     int k =0;
+	int rnd;
     while(k++ < 1024)
     {
-        memcpy( global_db.live + LINE_SIZE * index + 4*k , &filed, 4);
+		rnd = rand();
+        memcpy( global_db.live + LINE_SIZE * index + 4*k , &rnd, 4);
     }
 }
 
@@ -82,17 +84,17 @@ void ApplyWrite(int start_state,long long int index, int filed)
 void Execute(int start_state)
 {
     //long long int start_time = get_ntime();
-    long long int index1 = rand() % (global_db.size);   int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   int value3 = rand();
+    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
+    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
     //pthread_mutex_lock(&(global_db.live_lock[index1]));    pthread_mutex_lock(&(global_db.stable_lock[index1]));
     //pthread_mutex_lock(&(global_db.live_lock[index2]));    pthread_mutex_lock(&(global_db.stable_lock[index2]));
     //pthread_mutex_lock(&(global_db.live_lock[index3]));    pthread_mutex_lock(&(global_db.stable_lock[index3]));
-    ApplyWrite(start_state,index1,value1);
+    ApplyWrite(start_state,index1);
     //pthread_mutex_unlock(&(global_db.live_lock[index1]));    pthread_mutex_unlock(&(global_db.stable_lock[index1]));
-    ApplyWrite(start_state,index2,value2);
+    ApplyWrite(start_state,index2);
     //pthread_mutex_unlock(&(global_db.live_lock[index2]));    pthread_mutex_unlock(&(global_db.stable_lock[index2]));
-    ApplyWrite(start_state,index3,value3);
+    ApplyWrite(start_state,index3);
     //pthread_mutex_unlock(&(global_db.live_lock[index3]));    pthread_mutex_unlock(&(global_db.stable_lock[index3]));
 
     //pthread_mutex_lock(&mutex_state);
@@ -127,7 +129,7 @@ void* transaction(void* info) {
 }
 
 
-void* run_mtime(void* info){
+void* timer(void* info){
     while(is_finished==0){
         sleep(1);
         printf("%d\n",msec_throughput[timestamp]);
@@ -181,7 +183,7 @@ int main(int argc, char const *argv[]) {
         pthread_create(&pid_t,NULL,transaction,NULL);
     }
     pthread_t time_thread;
-    pthread_create(&time_thread,NULL,run_mtime,NULL);
+    pthread_create(&time_thread,NULL,timer,NULL);
     checkpointer(5);
     return 0;
 }
