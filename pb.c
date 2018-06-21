@@ -138,17 +138,16 @@ void* transaction(void* info) {
 void* run_mtime(void* info){
     while(is_finished==0){
         sleep(1);
-		printf("%d\n",msec_throughput[timestamp++]);//printf(",");
+		printf("%d\n",msec_throughput[timestamp]);
+		++timestamp;
     }
 }
 
 void checkpointer(int num) {
 	char* temp;
 	int * temp2;
-	sleep(5);  //第一次检查点直接用5s替代算了
+	sleep(30);  //第一次检查点直接用5s替代算了
 	while(num--) {
-		sleep(100);    //和calc保持一致
-		peroid++;	
 		int p = peroid;
 		long long int i;		
 		if(p%2==1){
@@ -185,6 +184,8 @@ void checkpointer(int num) {
 				i++;
 			}
 		}
+		sleep(30);    //和calc保持一致
+		peroid++;	
 	}
 	is_finished = 1;
 }
@@ -207,7 +208,7 @@ int main(int argc, char const *argv[]) {
     }
 	pthread_t time_thread;
     pthread_create(&time_thread,NULL,run_mtime,NULL);
-	checkpointer(10);
+	checkpointer(5);
 	
 	for(int i=0; i<timestamp; i++)
 	{

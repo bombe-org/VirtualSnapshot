@@ -144,7 +144,7 @@ void checkpointer(int num) {
     sleep(5);  //第一次检查点直接用5s替代算了
     while(num--) {
         global_db.STATE = REST;
-        sleep(100);
+        sleep(30);
         global_db.STATE = PREPARE;
         while(active>0);
         global_db.STATE = RESOLVE;
@@ -188,7 +188,7 @@ int main(int argc, char const *argv[]) {
     }
     pthread_t time_thread;
     pthread_create(&time_thread,NULL,run_mtime,NULL);
-    checkpointer(10);
+    checkpointer(5);
 	//for(int i=0;i<timestamp;i++)
 	//{
 		//printf("%d\n",msec_throughput[i]);
