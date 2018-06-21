@@ -132,7 +132,7 @@ void* transaction(void* info) {
 void* timer(void* info){
     while(is_finished==0){
         sleep(1);
-        printf("%d\n",msec_throughput[timestamp]);
+        //printf("%d\n",msec_throughput[timestamp]);
         ++timestamp;
     }
 }
@@ -185,5 +185,11 @@ int main(int argc, char const *argv[]) {
     pthread_t time_thread;
     pthread_create(&time_thread,NULL,timer,NULL);
     checkpointer(5);
+	int sum = 0;
+	for(int i = 0; i< timestamp; ++i)
+	{
+		sum+=msec_throughput[timestamp];
+	}
+	printf("%f\n", (float)sum/timestamp);
     return 0;
 }
