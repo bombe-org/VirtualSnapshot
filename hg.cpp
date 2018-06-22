@@ -132,7 +132,7 @@ void *transaction(void *info) {
 void *timer(void *info) {
     while (is_finished == 0) {
         sleep(1);
-        //printf("%d\n",sec_throughput[timestamp]);
+        printf("%d\n",sec_throughput[timestamp]);
         ++timestamp;
     }
 }
