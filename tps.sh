@@ -1,5 +1,4 @@
-#!/bin/bash  
-rm *.txt 
+#!/bin/bash
 echo size , thread_cnt, timestamp, tpms
 for s in 250000 500000 1000000 2000000
 do

@@ -131,7 +131,7 @@ void *transaction(void *info) {
 void *timer(void *info) {
     while (is_finished == 0) {
         sleep(1);
-        printf("%d\n",sec_throughput[timestamp]);
+        //printf("%d\n",sec_throughput[timestamp]);
         ++timestamp;
     }
 }
@@ -189,6 +189,6 @@ int main(int argc, char const *argv[]) {
     for (int i = timestamp/4; i < timestamp/4*3; ++i) {
         sum += sec_throughput[i];
     }
-    printf("CALC,%d,%d,%d,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);
+    printf("CALC,%d,%lld,%lld,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);
     return 0;
 }
