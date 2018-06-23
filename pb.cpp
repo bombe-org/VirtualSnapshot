@@ -73,18 +73,20 @@ void unit_write1(long long int index1) {
 
 
 void work0() {
-	int i = 0;
-	while(i++<8){
-    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    unit_write0(index1);}
+    int i = 0;
+    while (i++ < 8) {
+        long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+        unit_write0(index1);
+    }
     ++sec_throughput[timestamp];
 }
 
 void work1() {
-	int i = 0;
-	while(i++<8){
-    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    unit_write1(index1);}
+    int i = 0;
+    while (i++ < 8) {
+        long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+        unit_write1(index1);
+    }
     ++sec_throughput[timestamp];
 }
 
@@ -126,7 +128,7 @@ void checkpointer(int num) {
                     memcpy(global_db.D1 + i * LINE_SIZE, global_db.D2 + i * LINE_SIZE, LINE_SIZE);
                     global_db.bitr[i] = 0;
                 }
-                ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);                
+                ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);
                 i++;
             }
         } else {
@@ -140,7 +142,7 @@ void checkpointer(int num) {
                     pthread_mutex_unlock(&(global_db.D2_lock[i]));
                     global_db.bitr[i] = 0;
                 }
-                ckp_fd.write( global_db.D2 + i * LINE_SIZE, LINE_SIZE);
+                ckp_fd.write(global_db.D2 + i * LINE_SIZE, LINE_SIZE);
                 i++;
             }
         }
@@ -166,7 +168,7 @@ int main(int argc, char const *argv[]) {
     pthread_create(&time_thread, NULL, timer, NULL);
     checkpointer(5);
     long long int sum = 0;
-    for (int i = timestamp/4; i < timestamp/4*3; ++i) {
+    for (int i = timestamp / 4; i < timestamp / 4 * 3; ++i) {
         sum += sec_throughput[i];
     }
     printf("PB,%d,%lld,%lld,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);

@@ -83,23 +83,24 @@ void ApplyWrite(int start_state, long long int index) {
 
 //   采用两阶段锁操作并发事务
 void Execute(int start_state) {
-	int i = 0;
-	long long int index[8];
-	while(i<8){
-    	index[i] = rand() % (global_db.size);   //int value1 = rand();
-    	ApplyWrite(start_state, index[i]);
-		i++;
-	}
+    int i = 0;
+    long long int index[8];
+    while (i < 8) {
+        index[i] = rand() % (global_db.size);   //int value1 = rand();
+        ApplyWrite(start_state, index[i]);
+        i++;
+    }
     int commit_state = global_db.STATE;
     if (start_state == PREPARE) {
         if (commit_state == RESOLVE) {
-			i = 0;
-			while(i<8){
-	            global_db.bit[index[i]] = 1;
-				i++;}
+            i = 0;
+            while (i < 8) {
+                global_db.bit[index[i]] = 1;
+                i++;
+            }
         }
     }
-	//cout<<start_state;
+    //cout<<start_state;
     ++sec_throughput[timestamp];
 }
 
@@ -177,7 +178,7 @@ int main(int argc, char const *argv[]) {
     pthread_create(&time_thread, NULL, timer, NULL);
     checkpointer(5);
     long long int sum = 0;
-    for (int i = timestamp/4; i < timestamp/4*3; ++i) {
+    for (int i = timestamp / 4; i < timestamp / 4 * 3; ++i) {
         sum += sec_throughput[i];
     }
     printf("CALC,%d,%lld,%lld,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);
