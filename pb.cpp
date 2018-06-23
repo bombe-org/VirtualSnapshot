@@ -58,7 +58,7 @@ void unit_write0(long long int index1) {
     while (k++ < 1024) {
         memcpy(global_db.D1 + LINE_SIZE * index1 + 4 * k, &filed, 4);
     }
-    global_db.bitr[index1] = 1;
+    //global_db.bitr[index1] = 1;
 }
 
 void unit_write1(long long int index1) {
@@ -68,7 +68,7 @@ void unit_write1(long long int index1) {
     while (k++ < 1024) {
         memcpy(global_db.D2 + LINE_SIZE * index1 + 4 * k, &filed, 4);
     }
-    global_db.bitr[index1] = 2;
+    //global_db.bitr[index1] = 2;
 }
 
 
@@ -171,6 +171,6 @@ int main(int argc, char const *argv[]) {
     for (int i = timestamp / 4; i < timestamp / 4 * 3; ++i) {
         sum += sec_throughput[i];
     }
-    printf("PB,%d,%lld,%lld,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);
+ printf("PB,%d,%lld,%f\n", atoi(argv[1]), throughput, (float) sum / timestamp * 2);
     return 0;
 }

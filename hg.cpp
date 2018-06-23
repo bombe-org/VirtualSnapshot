@@ -81,8 +81,8 @@ void unit_write0(long long int index1) {
     while (k++ < 1024) {
         memcpy(global_db.D1 + LINE_SIZE * index1 + 4 * k, &rnd, 4);
     }
-    global_db.bit1[index1] = 1;
-    global_db.bitr[index1] = 0;
+    //global_db.bit1[index1] = 1;
+    //global_db.bitr[index1] = 0;
 }
 
 void unit_write1(long long int index1) {
@@ -92,8 +92,8 @@ void unit_write1(long long int index1) {
     while (k++ < 1024) {
         memcpy(global_db.D2 + LINE_SIZE * index1 + 4 * k, &filed, 4);
     }
-    global_db.bit2[index1] = 1;
-    global_db.bitr[index1] = 1;
+    //global_db.bit2[index1] = 1;
+    //global_db.bitr[index1] = 1;
 }
 
 // 采用两阶段锁操作并发事务
@@ -197,6 +197,6 @@ int main(int argc, char const *argv[]) {
     for (int i = timestamp / 4; i < timestamp / 4 * 3; ++i) {
         sum += sec_throughput[i];
     }
-    printf("HG,%d,%lld,%lld,%f\n", atoi(argv[1]), throughput, timestamp, (float) sum / timestamp * 2);
-    return 0;
+     printf("HG,%d,%lld,%f\n", atoi(argv[1]), throughput, (float) sum / timestamp * 2);    
+     return 0;
 }
