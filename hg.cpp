@@ -7,8 +7,21 @@
 #include <fcntl.h>
 #include <math.h>
 
-#include "util.h"
+#define lock(lkp) do{  \
+    while(!__sync_bool_compare_and_swap(lkp, 0, 1)){    \
+        sched_yield();  \
+    }   \
+}while(0)
 
+#define unlock(lkp) do{    \
+    *(lkp) = 0;  \
+}while(0)
+ 
+#define try_lock(lkp) ({   \
+    (__sync_bool_compare_and_swap(lkp, 0, 1) ? 0 : -1);   \
+})
+
+#include "util.h"
 #include <fstream>
 
 using namespace std;
@@ -35,6 +48,12 @@ int peroid = 0;
 
 int *sec_throughput;
 long long int timestamp = 0;
+
+
+int no_dead_lock1 = 0;
+int no_dead_lock2 = 0;
+int no_dead_lock3 = 0;
+int no_dead_lock4 = 0;
 
 
 
@@ -80,36 +99,18 @@ void unit_write1(long long int index1) {
 
 // 采用两阶段锁操作并发事务
 void work0() {
-    //long long int start_time = get_ntime();
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
-    //pthread_mutex_lock(&(global_db.D1_lock[index1]));
     unit_write0(index1);
-    //pthread_mutex_lock(&(global_db.D1_lock[index2]));
     unit_write0(index2);
-    //pthread_mutex_lock(&(global_db.D1_lock[index3]));
-    unit_write0(index3);
-    //pthread_mutex_unlock(&(global_db.D1_lock[index1]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index2]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
     ++sec_throughput[timestamp];
 }
 
 void work1() {
-    //long long int start_time = get_ntime();
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
-    //pthread_mutex_lock(&(global_db.D1_lock[index1]));
     unit_write1(index1);
-    //pthread_mutex_lock(&(global_db.D1_lock[index2]));
     unit_write1(index2);
-    //pthread_mutex_lock(&(global_db.D1_lock[index3]));
-    unit_write1(index3);
-    //pthread_mutex_unlock(&(global_db.D1_lock[index1]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index2]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
     ++sec_throughput[timestamp];
 }
 
@@ -148,11 +149,9 @@ void checkpointer(int num) {
             while (i < global_db.size) {
                 if (global_db.bit1[i] == 1) {
                     ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);
-                    //lseek(ckp_fd, 0, SEEK_END);
                     global_db.bit1[i] == 0;
                 } else {
                     ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);
-                    //lseek(ckp_fd, 0, SEEK_END);
                 }
                 i++;
             }
@@ -163,11 +162,9 @@ void checkpointer(int num) {
             while (i < global_db.size) {
                 if (global_db.bit2[i] == 1) {
                     ckp_fd.write(global_db.D2 + i * LINE_SIZE, LINE_SIZE);
-                    //lseek(ckp_fd, 0, SEEK_END);
                     global_db.bit2[i] == 0;
                 } else {
                     ckp_fd.write( global_db.D2 + i * LINE_SIZE, LINE_SIZE);
-                    //lseek(ckp_fd, 0, SEEK_END);
                 }
                 i++;
             }

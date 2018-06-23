@@ -83,23 +83,11 @@ void ApplyWrite(int start_state, long long int index) {
 
 //   采用两阶段锁操作并发事务
 void Execute(int start_state) {
-    //long long int start_time = get_ntime();
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
-    //pthread_mutex_lock(&(global_db.live_lock[index1]));    pthread_mutex_lock(&(global_db.stable_lock[index1]));
-    //pthread_mutex_lock(&(global_db.live_lock[index2]));    pthread_mutex_lock(&(global_db.stable_lock[index2]));
-    //pthread_mutex_lock(&(global_db.live_lock[index3]));    pthread_mutex_lock(&(global_db.stable_lock[index3]));
     ApplyWrite(start_state, index1);
-    //pthread_mutex_unlock(&(global_db.live_lock[index1]));    pthread_mutex_unlock(&(global_db.stable_lock[index1]));
     ApplyWrite(start_state, index2);
-    //pthread_mutex_unlock(&(global_db.live_lock[index2]));    pthread_mutex_unlock(&(global_db.stable_lock[index2]));
-    ApplyWrite(start_state, index3);
-    //pthread_mutex_unlock(&(global_db.live_lock[index3]));    pthread_mutex_unlock(&(global_db.stable_lock[index3]));
-
-    //pthread_mutex_lock(&mutex_state);
     int commit_state = global_db.STATE;
-    //pthread_mutex_unlock(&mutex_state);
     if (start_state == PREPARE) {
         if (commit_state == RESOLVE) {
             global_db.bit[index1] = 1;
@@ -148,16 +136,12 @@ void checkpointer(int num) {
 
         long long int i = 0;
         ofstream ckp_fd("dump.dat", ios::binary);
-        //ckp_fd = open("./dump.dat", O_WRONLY | O_TRUNC | O_SYNC | O_CREAT, 666);
         while (i < global_db.size) {
             if (global_db.bit[i] == 1) {
                 ckp_fd.write((global_db.stable + i * LINE_SIZE), LINE_SIZE);
-                //lseek(ckp_fd, 0, SEEK_END);
-                //f.write((char*)pos, 200*sizeof(double));
             } else if (global_db.bit[i] == 0) {
                 global_db.bit[i] == 1;
                 ckp_fd.write(global_db.live + i * LINE_SIZE, LINE_SIZE);
-                //lseek(ckp_fd, 0, SEEK_END);
             }
             i++;
         }

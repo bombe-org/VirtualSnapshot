@@ -75,32 +75,16 @@ void unit_write1(long long int index1) {
 void work0() {
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
-    //pthread_mutex_lock(&(global_db.D1_lock[index1]));
     unit_write0(index1);
-    //pthread_mutex_lock(&(global_db.D1_lock[index2]));
     unit_write0(index2);
-    //pthread_mutex_lock(&(global_db.D1_lock[index3]));
-    unit_write0(index3);
-    //pthread_mutex_unlock(&(global_db.D1_lock[index1]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index2]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
     ++sec_throughput[timestamp];
 }
 
 void work1() {
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    long long int index3 = rand() % (global_db.size);   //int value3 = rand();
-    //pthread_mutex_lock(&(global_db.D1_lock[index1]));
     unit_write1(index1);
-    //pthread_mutex_lock(&(global_db.D1_lock[index2]));
     unit_write1(index2);
-    //pthread_mutex_lock(&(global_db.D1_lock[index3]));
-    unit_write1(index3);
-    //pthread_mutex_unlock(&(global_db.D1_lock[index1]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index2]));
-    //pthread_mutex_unlock(&(global_db.D1_lock[index3]));
     ++sec_throughput[timestamp];
 }
 
@@ -139,9 +123,7 @@ void checkpointer(int num) {
             while (i < global_db.size) {
                 if (global_db.bitr[i] == 2)    // write to online  顺带着刷磁盘的过程中执行了
                 {
-                    //pthread_mutex_lock(&(global_db.D1_lock[i]));
                     memcpy(global_db.D1 + i * LINE_SIZE, global_db.D2 + i * LINE_SIZE, LINE_SIZE);
-                    //pthread_mutex_unlock(&(global_db.D1_lock[i]));
                     global_db.bitr[i] = 0;
                 }
                 ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);                
@@ -159,7 +141,6 @@ void checkpointer(int num) {
                     global_db.bitr[i] = 0;
                 }
                 ckp_fd.write( global_db.D2 + i * LINE_SIZE, LINE_SIZE);
-                //lseek(ckp_fd, 0, SEEK_END);
                 i++;
             }
         }
