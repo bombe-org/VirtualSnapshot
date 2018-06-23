@@ -17,15 +17,13 @@ using namespace std;
 #define LINE_SIZE 4096
 
 typedef struct {
-    long long int size;
-    char *D1;
-    char *D2;
-    int *bitr;
-    pthread_mutex_t *D1_lock;
-    pthread_mutex_t *D2_lock;
-} database;
+    char D1[LINE_SIZE];
+    char D2[LINE_SIZE];
+    int bitr;
+} row;
 
-database global_db;
+row* global_db;
+long long int size;
 int is_finished = 0;     //程序是否结束
 long long int throughput = 0;   //  系统最大并行度
 long long int active0 = 0;
@@ -36,17 +34,13 @@ int *sec_throughput;
 long long int timestamp = 0;
 
 
-void load_db(long long int size) {
-    global_db.size = size;
-    global_db.D1 = (char *) malloc(global_db.size * LINE_SIZE);
-    global_db.D2 = (char *) malloc(global_db.size * LINE_SIZE);
-    global_db.bitr = (int *) malloc(global_db.size * sizeof(int));
-    global_db.D1_lock = (pthread_mutex_t *) malloc(global_db.size * sizeof(pthread_mutex_t));
-    global_db.D2_lock = (pthread_mutex_t *) malloc(global_db.size * sizeof(pthread_mutex_t));
+void load_db(long long int s) {
+    size = s;
+    global_db = (row*) malloc(size * sizeof(row));
+
     long long int i = 0;
-    while (i < global_db.size) {
-        pthread_mutex_init(&(global_db.D1_lock[i]), NULL);
-        pthread_mutex_init(&(global_db.D2_lock[i]), NULL);
+    while (i < size) {
+        global_db[i].bitr = 1;
         i++;
     }
 }
@@ -56,9 +50,9 @@ void unit_write0(long long int index1) {
     int filed;
     filed = rand();
     while (k++ < 1024) {
-        memcpy(global_db.D1 + LINE_SIZE * index1 + 4 * k, &filed, 4);
+        memcpy(global_db[index1].D1 + 4 * k, &filed, 4);
     }
-    //global_db.bitr[index1] = 1;
+    global_db[index1].bitr = 1;
 }
 
 void unit_write1(long long int index1) {
@@ -66,16 +60,16 @@ void unit_write1(long long int index1) {
     int filed;
     filed = rand();
     while (k++ < 1024) {
-        memcpy(global_db.D2 + LINE_SIZE * index1 + 4 * k, &filed, 4);
+        memcpy(global_db[index1].D2 + 4 * k, &filed, 4);
     }
-    //global_db.bitr[index1] = 2;
+    global_db[index1].bitr = 2;
 }
 
 
 void work0() {
     int i = 0;
     while (i++ < 8) {
-        long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+        long long int index1 = rand() % (size);   //int value1 = rand();
         unit_write0(index1);
     }
     ++sec_throughput[timestamp];
@@ -84,7 +78,7 @@ void work0() {
 void work1() {
     int i = 0;
     while (i++ < 8) {
-        long long int index1 = rand() % (global_db.size);   //int value1 = rand();
+        long long int index1 = rand() % (size);   //int value1 = rand();
         unit_write1(index1);
     }
     ++sec_throughput[timestamp];
@@ -122,27 +116,25 @@ void checkpointer(int num) {
             while (active0 > 0);
             ofstream ckp_fd("dump.dat", ios::binary);
             i = 0;
-            while (i < global_db.size) {
-                if (global_db.bitr[i] == 2)    // write to online  顺带着刷磁盘的过程中执行了
+            while (i < size) {
+                if (global_db[i].bitr == 2)    // write to online  顺带着刷磁盘的过程中执行了
                 {
-                    memcpy(global_db.D1 + i * LINE_SIZE, global_db.D2 + i * LINE_SIZE, LINE_SIZE);
-                    global_db.bitr[i] = 0;
+                    memcpy(global_db[i].D1, global_db[i].D2, LINE_SIZE);
+                    global_db[i].bitr = 0;
                 }
-                ckp_fd.write(global_db.D1 + i * LINE_SIZE, LINE_SIZE);
+                ckp_fd.write(global_db[i].D1, LINE_SIZE);
                 i++;
             }
         } else {
             while (active1 > 0);
             i = 0;
             ofstream ckp_fd("dump.dat", ios::binary);
-            while (i < global_db.size) {
-                if (global_db.bitr[i] == 1) {
-                    pthread_mutex_lock(&(global_db.D2_lock[i]));
-                    memcpy(global_db.D2 + i * LINE_SIZE, global_db.D1 + i * LINE_SIZE, LINE_SIZE);
-                    pthread_mutex_unlock(&(global_db.D2_lock[i]));
-                    global_db.bitr[i] = 0;
+            while (i < size) {
+                if (global_db[i].bitr == 1) {
+                    memcpy(global_db[i].D2 , global_db[i].D1, LINE_SIZE);
+                    global_db[i].bitr = 0;
                 }
-                ckp_fd.write(global_db.D2 + i * LINE_SIZE, LINE_SIZE);
+                ckp_fd.write(global_db[i].D2, LINE_SIZE);
                 i++;
             }
         }
@@ -171,6 +163,6 @@ int main(int argc, char const *argv[]) {
     for (int i = timestamp / 4; i < timestamp / 4 * 3; ++i) {
         sum += sec_throughput[i];
     }
- printf("PB,%d,%lld,%f\n", atoi(argv[1]), throughput, (float) sum / timestamp * 2);
+    printf("PB,%d,%lld,%f\n", atoi(argv[1]), throughput, (float) sum / timestamp * 2);
     return 0;
 }
