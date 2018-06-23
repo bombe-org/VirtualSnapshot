@@ -8,7 +8,7 @@
 #include <math.h>
 
 #include "util.h"
-
+#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -83,16 +83,23 @@ void ApplyWrite(int start_state, long long int index) {
 
 //   采用两阶段锁操作并发事务
 void Execute(int start_state) {
-    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    ApplyWrite(start_state, index1);
-    ApplyWrite(start_state, index2);
+	int i = 0;
+	long long int index[8];
+	while(i<8){
+    	index[i] = rand() % (global_db.size);   //int value1 = rand();
+    	ApplyWrite(start_state, index[i]);
+		i++;
+	}
     int commit_state = global_db.STATE;
     if (start_state == PREPARE) {
         if (commit_state == RESOLVE) {
-            global_db.bit[index1] = 1;
+			i = 0;
+			while(i<8){
+	            global_db.bit[index[i]] = 1;
+				i++;}
         }
     }
+	//cout<<start_state;
     ++sec_throughput[timestamp];
 }
 

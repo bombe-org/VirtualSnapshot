@@ -73,18 +73,18 @@ void unit_write1(long long int index1) {
 
 
 void work0() {
+	int i = 0;
+	while(i++<8){
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    unit_write0(index1);
-    unit_write0(index2);
+    unit_write0(index1);}
     ++sec_throughput[timestamp];
 }
 
 void work1() {
+	int i = 0;
+	while(i++<8){
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
-    unit_write1(index1);
-    unit_write1(index2);
+    unit_write1(index1);}
     ++sec_throughput[timestamp];
 }
 

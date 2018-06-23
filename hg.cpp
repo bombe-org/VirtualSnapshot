@@ -76,41 +76,43 @@ void load_db(long long int size) {
 }
 
 void unit_write0(long long int index1) {
-    global_db.bit1[index1] = 1;
     int k = 0;
     int rnd;
     rnd = rand();
     while (k++ < 1024) {
         memcpy(global_db.D1 + LINE_SIZE * index1 + 4 * k, &rnd, 4);
     }
+    global_db.bit1[index1] = 1;
     global_db.bitr[index1] = 0;
 }
 
 void unit_write1(long long int index1) {
-    global_db.bit2[index1] = 1;
     int k = 0;
     int filed;
     filed = rand();
     while (k++ < 1024) {
         memcpy(global_db.D2 + LINE_SIZE * index1 + 4 * k, &filed, 4);
     }
+    global_db.bit2[index1] = 1;
     global_db.bitr[index1] = 1;
 }
 
 // 采用两阶段锁操作并发事务
 void work0() {
-    long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
+    int i = 0;
+	while(i++<8){
+		long long int index1 = rand() % (global_db.size);   //int value1 = rand();
     unit_write0(index1);
-    unit_write0(index2);
-    ++sec_throughput[timestamp];
+    }
+	++sec_throughput[timestamp];
 }
 
 void work1() {
+	int i = 0;
+	while(i++<8){
     long long int index1 = rand() % (global_db.size);   //int value1 = rand();
-    long long int index2 = rand() % (global_db.size);   //int value2 = rand();
     unit_write1(index1);
-    unit_write1(index2);
+	}
     ++sec_throughput[timestamp];
 }
 
