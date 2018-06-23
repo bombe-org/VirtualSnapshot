@@ -60,13 +60,13 @@ void load_db(long long int size) {
 
 void ApplyWrite(int start_state, long long int index) {
     if (start_state == PREPARE) {
-        if (global_db.bit[index] == 0)
+        //if (global_db.bit[index] == 0)
             memcpy(global_db.stable + LINE_SIZE * index, global_db.live + LINE_SIZE * index, LINE_SIZE);
     } else if (start_state == RESOLVE || start_state == CAPTURE) {
-        if (global_db.bit[index] == 0) {
+        //if (global_db.bit[index] == 0) {
             memcpy(global_db.stable + LINE_SIZE * index, global_db.live + LINE_SIZE * index, LINE_SIZE);
             global_db.bit[index] = 1;
-        }
+        //}
     } else if (start_state == COMPLETE || start_state == REST) {
         if (global_db.stable[index]) {
         }
@@ -84,8 +84,8 @@ void ApplyWrite(int start_state, long long int index) {
 //   采用两阶段锁操作并发事务
 void Execute(int start_state) {
     int i = 0;
-    long long int index[8];
-    while (i < 8) {
+    long long int index[3];
+    while (i < 3) {
         index[i] = rand() % (global_db.size);   //int value1 = rand();
         ApplyWrite(start_state, index[i]);
         i++;
@@ -94,7 +94,7 @@ void Execute(int start_state) {
     if (start_state == PREPARE) {
         if (commit_state == RESOLVE) {
             i = 0;
-            while (i < 8) {
+            while (i < 3) {
                 global_db.bit[index[i]] = 1;
                 i++;
             }

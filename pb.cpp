@@ -68,7 +68,7 @@ void unit_write1(long long int index1) {
 
 void work0() {
     int i = 0;
-    while (i++ < 8) {
+    while (i++ < 3) {
         long long int index1 = rand() % (size);   //int value1 = rand();
         unit_write0(index1);
     }
@@ -77,7 +77,7 @@ void work0() {
 
 void work1() {
     int i = 0;
-    while (i++ < 8) {
+    while (i++ < 3) {
         long long int index1 = rand() % (size);   //int value1 = rand();
         unit_write1(index1);
     }
